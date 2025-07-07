@@ -1,53 +1,42 @@
 #include <bits/stdc++.h>
-#include <queue>
 using namespace std;
-#define pii pair<int,int>
+ 
 #define ll long long
-#define pll pair<ll, ll>
-
-
-ll block_size; // Global variable for block size in Mo's algorithm
-multiset<ll> numbers;
-set<ll> unique_numbers;
-vector<ll> arr;
-
-
-bool cmp(pair<ll, ll> p, pair<ll, ll> q) {
-    if (p.first / block_size != q.first / block_size)
-        return p < q;
-    return (p.first / block_size & 1) ? (p.second < q.second) : (p.second > q.second);
-}
+ 
+int block_size;
+vector<int> arr;       // array comprimido
+vector<int> freq;      // frequência dos valores comprimidos
+int unique_count = 0;
+ 
 struct Query {
-    ll l, r, idx;
+    int l, r, idx;
     bool operator<(Query other) const
     {
         return make_pair(l / block_size, r) <
                make_pair(other.l / block_size, other.r);
     }
 };
-
-void remove(ll idx){
-    numbers.erase(numbers.find(arr[idx]));
-    if (numbers.find(arr[idx]) == numbers.end()) {
-        unique_numbers.erase(arr[idx]);
-    }
-}; 
-
-void add(ll idx){
-    numbers.insert(arr[idx]);
-    unique_numbers.insert(arr[idx]);
-};   
-
-ll get_answer(){
-    return unique_numbers.size(); // Returns the number of unique elements in the current range
-};
-
-vector<ll> mo_s_algorithm(vector<Query> queries) {
-    vector<ll> answers(queries.size());
+ 
+ 
+ 
+void add(int idx) {
+    if (++freq[arr[idx]] == 1)
+        unique_count++;
+}
+ 
+void remove(int idx) {
+    if (--freq[arr[idx]] == 0)
+        unique_count--;
+}
+ 
+vector<int> mo_s_algorithm(vector<Query> queries) {
+    vector<int> answers(queries.size());
     sort(queries.begin(), queries.end());
 
-    ll cur_l = 0;
-    ll cur_r = -1;
+    // TODO: initialize data structure
+
+    int cur_l = 0;
+    int cur_r = -1;
     // invariant: data structure will always reflect the range [cur_l, cur_r]
     for (Query q : queries) {
         while (cur_l > q.l) {
@@ -66,43 +55,49 @@ vector<ll> mo_s_algorithm(vector<Query> queries) {
             remove(cur_r);
             cur_r--;
         }
-        answers[q.idx] = get_answer();
+        answers[q.idx] = unique_count;
     }
     return answers;
 }
+ 
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+ 
+    int n, q;
+    cin >> n >> q;
+    block_size = sqrt(n);
+ 
+    // Leitura do array original
+    vector<int> original(n);
+    for (int i = 0; i < n; i++)
+        cin >> original[i];
+ 
+    // Inicio da Compressão de coordenadas
+    vector<int> temp = original;
+    sort(temp.begin(), temp.end());
+    temp.erase(unique(temp.begin(), temp.end()), temp.end());
 
-int main(){
-    std::ios_base::sync_with_stdio(false);
-    std::cin.tie(NULL);
-    ll size, quantQuerys;
-    cin >> size;
-    block_size = sqrt(size); // Size of each block for Mo's algorithm
-    cin >> quantQuerys;
-    vector<Query> arrQuerys;
-    int idx = 0; // Index to keep track of the query number
+    arr.resize(n);
+    for (int i = 0; i < n; i++)
+        arr[i] = lower_bound(temp.begin(), temp.end(), original[i]) - temp.begin();
+ 
+    int max_val = temp.size();
+    freq.resize(max_val, 0);
+    // fim da compressão de coordenadas
 
-
-    for(ll i = 0; i < size; i++){       //O(n)
-        ll item;
-        cin >> item;
-        arr.push_back(item);
+    // Leitura das queries
+    vector<Query> queries(q);
+    for (int i = 0; i < q; i++) {
+        int a, b;
+        cin >> a >> b;
+        queries[i] = {a - 1, b - 1, i};
     }
-    while(quantQuerys--){               // O(q)
-        ll start, end;
-        cin >> start >> end;
-        Query q;
-        q.l = start - 1; // Convert to 0-based index
-        q.r = end - 1;   // Convert to 0-based index
-        q.idx = idx; // Store the index of the query
-        idx++;
-        arrQuerys.push_back(q);
-    }
-
-    vector<ll> results = mo_s_algorithm(arrQuerys);         // O((n + q) * sqrt(n))
-
-
-    for(ll i = 0; i < results.size(); i++){             // O(q)
-        cout << results[i] << endl; // Output the result for each query
-    }
-return 0;
+ 
+    
+    vector<int> result = mo_s_algorithm(queries);
+    for (int res : result)
+        cout << res << '\n';
+ 
+    return 0;
 }
